@@ -1,0 +1,4 @@
+requests==2.13.0
+beautifulsoup4==4.5.3
+plotly==2.0.1
+regex==2017.02.08

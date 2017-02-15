@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from collections import Counter
 import requests
 import regex
 
@@ -17,12 +18,23 @@ class WikiCrawler(object):
     def start(self):
         """ Cycles through each of the randomly generated urls """
 
-        for url in self.checkable_urls:
-            self.crawl(url)
+        while len(self.seen_urls) < 500:
+            for url in self.checkable_urls:
+                print ("~" * 40)
+                self.crawl(url)
+
+        percentage = self._get_percentage()
+        distribution = self._get_distribution()
+
+        print ('Percentage of links that get to Philosophy: %.2f' % percentage)
+        print ('Distribution of number of links to get to Philosophy:')
+        for dist_pair in distribution:
+            if dist_pair[0]:
+                print (dist_pair[1], "links were ", dist_pair[0], "clicks away from Philosophy")
 
     def crawl(self, url):
         """
-        Checks if the url is one we have seen before, if not, we find its first link and continue tracking how many links away it is
+        Checks if the url is one we have seen before, if not, finds its first link and continues tracking how many links away it is
         """
 
         philosophy = '/wiki/Philosophy'
@@ -49,58 +61,60 @@ class WikiCrawler(object):
 
         links_away += 1
         self.clear_path(links_away)
-        print (self.seen_urls)
 
     def get_next_url(self, url):
+        """
+        Scrapes through current url's html to find first valid link, returns False if there isn't one.
+        """
+
         page = self.base_url + url
         response = requests.get(page).content
-        soup = self.make_soup(response)
+        soup = self.make_soup(response, 'div#mw-content-text > p')
         if soup.find('a') is None:
-            return self.make_more_soup(response)
-        # print (self.clean_url((soup.find('a')['href'])))
+            soup = self.make_soup(response, 'div#mw-content-text')
+            if soup.find('a') is None:
+                return False
+
         return self.clean_url((soup.find('a')['href']))
 
-    def make_soup(self, response):
-        soup = self.clean_soup(BeautifulSoup(response, 'html.parser'))
-        body = self.remove_parens(str(soup.select('div#mw-content-text > p')))
-        # print (body)
+    def make_soup(self, response, tag):
+        """ Creates html soup from current page """
 
+        soup = self.clean_soup(BeautifulSoup(response, 'html.parser'))
+        body = self.remove_parens(str(soup.select(tag)))
         return BeautifulSoup(body, 'html.parser')
 
-    def make_more_soup(self, response):
-        soup = self.clean_soup(BeautifulSoup(response, 'html.parser'))
-        body = self.remove_parens(str(soup.select('div#mw-content-text')))
-        return self.clean_url((soup.find('a')['href'])) if BeautifulSoup(body, 'html.parser').find('a') is None else False
-
-
     def clean_soup(self, soup):
-        """ Remove unneccessary tags and links from body of page """
-        [tag.replaceWith("") for tag in soup.find_all('sup')]
-        [tag.replaceWith("") for tag in soup.find_all('span')]
-        [tag.replaceWith("") for tag in soup.find_all('i')]
-        [tag.replaceWith("") for tag in soup.find_all('table')]
-        [tag.replaceWith("") for tag in soup.find_all('span')]
-        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'extiw' })]
-        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'new' })]
-        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'image' })]
-        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'external text' })]
-        # [out_link.replaceWith("") for out_link in soup.find_all('small', { 'class': 'metadata' })]
-        [out_link.replaceWith("") for out_link in soup.find_all('div', { 'class': 'toc' })]
+        """ Removes unneccessary tags and links from body of page """
+
+        [tag.extract() for tag in soup.find_all('i')]
+        [tag.extract() for tag in soup.find_all('sup')]
+        [tag.extract() for tag in soup.find_all('span')]
+        [tag.extract() for tag in soup.find_all('small')]
+        [tag.extract() for tag in soup.find_all('table')]
+        [out_link.extract() for out_link in soup.find_all('a', { 'class': 'extiw' })]
+        [out_link.extract() for out_link in soup.find_all('a', { 'class': 'new' })]
+        [out_link.extract() for out_link in soup.find_all('a', { 'class': 'external text' })]
+        [bad_link.extract() for bad_link in soup.find_all('div', { 'class': 'toc' })]
+        # [bad_link.extract() for bad_link in soup.find_all('a', { 'class': 'image' })]
 
         return soup
 
     def clean_url(self, url):
         """ Returns the relative url in case the href found is an absolute url """
+
         return url[url.find("/wiki/"):]
 
     def remove_parens(self, body):
-        """ Removes parentheses and enclosed text from the page """
+        """ Removes parentheses and enclosed text from the page if it is not between quotes """
+
         return regex.sub(r'".*?\(*.*?\)*.*?"(*SKIP)(*FAIL)|\(.*?\)', '', body)
 
     def clear_path(self, links_away, valid_url = True):
         """
         Takes all links in the current path and memoizes them in a dictionary. The url is the key and distance from philosophy is the value. If the link is invalid, the value is False.
         """
+
         for url in self.path:
             if url not in self.seen_urls:
                 if valid_url:
@@ -110,15 +124,26 @@ class WikiCrawler(object):
 
         self.path = {}
 
+    def _get_distribution(self):
+        """ Gets distribution of paths to Philosophy and their lengths """
+
+        return Counter(self.seen_urls.values()).most_common()
+
+    def _get_percentage(self):
+        """ Calcuates percentage of links that get to Philosophy """
+
+        valid_paths = len([url for url in self.seen_urls if self.seen_urls[url]])
+        return (valid_paths / len(self.seen_urls)) * 100
+
     def _get_urls(self):
-        """ Gets all 500 urls from the Wikipedia API in one HTTP Request """
+        """ Gets 500 random urls from the Wikipedia API in one HTTP Request """
 
         payload = {
             "action": "query",
             "format": "json",
             "list": "random",
             "rnnamespace": "0",
-            "rnlimit": "100"
+            "rnlimit": "500"
         }
 
         response = requests.get('http://en.wikipedia.org/w/api.php?', params=payload)
@@ -127,6 +152,6 @@ class WikiCrawler(object):
 
 
 crawler = WikiCrawler()
-crawler.start()
+# crawler.start()
 # crawler.get_next_url('/wiki/Physics')
-# crawler.crawl('/wiki/Canada')
+crawler.crawl('/wiki/2016_Soul_Train_Music_Awards')
