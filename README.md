@@ -11,17 +11,17 @@ Additionally, to prevent re-asking for information on a page we have already see
 
 While clicking on the first link of every page, I first check to see if it is a link I have come across before. If it is a valid link, I add its number of links to Philosophy to my current tally. I then make a call to empty my current path, since I know I have the information to calculate how far every link in the current path is from Philosophy (or if it will ever even get there).
 
-Additionally, if we assume that we merely need to check 500 different links, rather than the 500 specific ones that we originally query for, we can get there a lot faster since we have been keeping track the total links we have seen in the memo dictionary. Once there are 500 unique keys in `seen_urls` we already have the information we need to get our answers without actually having to go down 500 separate paths.
+Additionally, if we assume that we merely need to check 500 different links, rather than the 500 specific ones that we originally query for, we can get there a lot faster since we have been keeping track of the total links we have seen in the memo dictionary. Once there are 500 unique keys in `seen_urls` we already have the information we need to get our answers without actually having to go down 500 separate paths.
 
 ### Thoughts
 
 #### Use of Dictionaries
 
-Because I have to check against the current `path`, to make sure the link I am on is not a loop, and also against `seen_urls`, to guard against making extraneous requests for information I've already seen, I wanted to make look up as fast as possible. Though the syntax for seeing if something is in a dictionary is the same as checking if it's in a list, checking in a dictionary happens in 0(1) time. In a list lookup is 0(n).
+Because I have to check against the current `path`, to make sure the link I am on is not a loop, and also against `seen_urls`, to guard against making extraneous requests for information I've already seen, I wanted to make look up as fast as possible. Though the syntax for seeing if something is in a dictionary is the same as checking if it's in a list, checking in a dictionary happens in 0(1) time. In a list lookup it is 0(n).
 
 #### Tracking Clicks Away
 
-I saved the current count at the time I reached a url as its value in `path`. When I reached the end of the path, either by getting to Philosophy or it becoming invalid in some way, I transferred the urls in my current path to my memo dictionary and tracked their clicks from Philosophy by subtracting the value from the total amount of clicks away plus one.
+I save the current count at the time I reach a url as its value in `path`. When I reache the end of the path, either by getting to Philosophy or it becoming invalid in some way, I transfer the urls in my current path to my memo dictionary and track their clicks from Philosophy by subtracting the value from the total amount of clicks away plus one.
 
 ### To Use
 
