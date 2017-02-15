@@ -18,10 +18,9 @@ class WikiCrawler(object):
     def start(self):
         """ Cycles through each of the randomly generated urls """
 
-        while len(self.seen_urls) < 500:
-            for url in self.checkable_urls:
-                print ("~" * 40)
-                self.crawl(url)
+        while len(self.seen_urls.keys()) < 500:
+            print ("~" * 40)
+            self.crawl(self.checkable_urls.pop())
 
         percentage = self._get_percentage()
         distribution = self._get_distribution()
@@ -95,8 +94,9 @@ class WikiCrawler(object):
         [out_link.extract() for out_link in soup.find_all('a', { 'class': 'extiw' })]
         [out_link.extract() for out_link in soup.find_all('a', { 'class': 'new' })]
         [out_link.extract() for out_link in soup.find_all('a', { 'class': 'external text' })]
+        [out_link.extract() for out_link in soup.find_all('a', { 'class': 'image' })]
         [bad_link.extract() for bad_link in soup.find_all('div', { 'class': 'toc' })]
-        # [bad_link.extract() for bad_link in soup.find_all('a', { 'class': 'image' })]
+        [bad_link.extract() for bad_link in soup.find_all('div', { 'class': 'thumb' })]
 
         return soup
 
@@ -152,6 +152,5 @@ class WikiCrawler(object):
 
 
 crawler = WikiCrawler()
-# crawler.start()
-# crawler.get_next_url('/wiki/Physics')
-crawler.crawl('/wiki/2016_Soul_Train_Music_Awards')
+crawler.start()
+# crawler.crawl('/wiki/List_of_motor_vehicle_deaths_in_U.S._by_year')
