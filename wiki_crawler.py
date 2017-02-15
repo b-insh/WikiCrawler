@@ -124,6 +124,7 @@ class WikiCrawler(object):
                     self.seen_urls[url] = False
 
         self.path = {}
+        
 
     def _get_average(self):
         values = self._get_distribution()
