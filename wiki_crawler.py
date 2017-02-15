@@ -11,7 +11,6 @@ class WikiCrawler(object):
         self.base_url = 'http://en.wikipedia.org'
 
         self.checkable_urls = self._get_urls()
-
         self.seen_urls = {}
         self.path = {}
 
@@ -20,8 +19,6 @@ class WikiCrawler(object):
 
         for url in self.checkable_urls:
             self.crawl(url)
-
-
 
     def crawl(self, url):
         """
@@ -34,10 +31,13 @@ class WikiCrawler(object):
         while not url == philosophy:
             print (url)
             if url in self.seen_urls:
-                links_away += self.seen_urls[url] + 1
+                if not self.seen_urls[url]:
+                    self.clear_path(links_away, False)
+                else:
+                    links_away += self.seen_urls[url] + 1
 
-                self.clear_path(links_away)
-                break
+                    self.clear_path(links_away)
+                    break
 
             elif url in self.path or not url:
                 self.clear_path(links_away, False)
@@ -54,23 +54,23 @@ class WikiCrawler(object):
     def get_next_url(self, url):
         page = self.base_url + url
         response = requests.get(page).content
+        soup = self.make_soup(response)
+        if soup.find('a') is None:
+            return self.make_more_soup(response)
+        # print (self.clean_url((soup.find('a')['href'])))
+        return self.clean_url((soup.find('a')['href']))
+
+    def make_soup(self, response):
         soup = self.clean_soup(BeautifulSoup(response, 'html.parser'))
-        if soup.find('a') is None:
-            return self.check_elsewhere(response)
-        return self.clean_url((soup.find('a')['href']))
+        body = self.remove_parens(str(soup.select('div#mw-content-text > p')))
+        # print (body)
 
-    def check_elsewhere(self, response):
-        soup = (BeautifulSoup(response, 'html.parser'))
-        [tag.replaceWith("") for tag in soup.find_all('sup')]
-        [tag.replaceWith("") for tag in soup.find_all('span')]
-        [tag.replaceWith("") for tag in soup.find_all('i')]
-        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'extiw' })]
+        return BeautifulSoup(body, 'html.parser')
 
+    def make_more_soup(self, response):
+        soup = self.clean_soup(BeautifulSoup(response, 'html.parser'))
         body = self.remove_parens(str(soup.select('div#mw-content-text')))
-        soup = BeautifulSoup(body, 'html.parser')
-        if soup.find('a') is None:
-            return False
-        return self.clean_url((soup.find('a')['href']))
+        return self.clean_url((soup.find('a')['href'])) if BeautifulSoup(body, 'html.parser').find('a') is None else False
 
 
     def clean_soup(self, soup):
@@ -78,24 +78,24 @@ class WikiCrawler(object):
         [tag.replaceWith("") for tag in soup.find_all('sup')]
         [tag.replaceWith("") for tag in soup.find_all('span')]
         [tag.replaceWith("") for tag in soup.find_all('i')]
+        [tag.replaceWith("") for tag in soup.find_all('table')]
+        [tag.replaceWith("") for tag in soup.find_all('span')]
         [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'extiw' })]
+        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'new' })]
+        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'image' })]
+        [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'external text' })]
+        # [out_link.replaceWith("") for out_link in soup.find_all('small', { 'class': 'metadata' })]
+        [out_link.replaceWith("") for out_link in soup.find_all('div', { 'class': 'toc' })]
 
-        body = self.remove_parens(str(soup.select('div#mw-content-text > p')))
-        return BeautifulSoup(body, 'html.parser')
-        # [out_link.replaceWith("") for out_link in soup.find_all('div', { 'class': 'hatnote' })]
-        # [out_link.replaceWith("") for out_link in soup.find_all('a', { 'class': 'mw-redirect' })]
+        return soup
 
     def clean_url(self, url):
-        """ Returns the relative url if the href found is an absolute url """
-        if url[0:4] == "http":
-            url = url[url.find("/wiki/"):]
-            print ("chopped")
-            print (url)
-        return url
+        """ Returns the relative url in case the href found is an absolute url """
+        return url[url.find("/wiki/"):]
 
     def remove_parens(self, body):
         """ Removes parentheses and enclosed text from the page """
-        return regex.sub(r'".*?\(.*?\).*?"(*SKIP)(*FAIL)|\(.*?\)', '', body)
+        return regex.sub(r'".*?\(*.*?\)*.*?"(*SKIP)(*FAIL)|\(.*?\)', '', body)
 
     def clear_path(self, links_away, valid_url = True):
         """
@@ -118,7 +118,7 @@ class WikiCrawler(object):
             "format": "json",
             "list": "random",
             "rnnamespace": "0",
-            "rnlimit": "10"
+            "rnlimit": "100"
         }
 
         response = requests.get('http://en.wikipedia.org/w/api.php?', params=payload)
@@ -129,4 +129,4 @@ class WikiCrawler(object):
 crawler = WikiCrawler()
 crawler.start()
 # crawler.get_next_url('/wiki/Physics')
-# crawler.crawl('/wiki/Gegenbauer')
+# crawler.crawl('/wiki/Canada')
