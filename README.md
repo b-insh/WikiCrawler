@@ -9,9 +9,9 @@ WikiCrawler is a Python program that takes in a random Wikipedia url and follows
 
 Additionally, to prevent re-asking for information on a page we have already seen, I opted to keep a dictionary of all pages that have been come across. Their urls are the keys and their link distance from Philosophy is the value.
 
-While clicking on the first link of every page, I first check to see if it is a link I have come across before. If it is a valid link, I add its number of links to Philosophy to my current tally. I then make a call to empty my current path, since I know have the information I need to calculate how far every link in the current path is from Philosophy (or if it will ever even get there).
+While clicking on the first link of every page, I first check to see if it is a link I have come across before. If it is a valid link, I add its number of links to Philosophy to my current tally. I then make a call to empty my current path, since I know I have the information to calculate how far every link in the current path is from Philosophy (or if it will ever even get there).
 
-Additionally, if assume that we merely need to check 500 different links, rather than the 500 specific ones that we originally query for, we can get there a lot faster since we have been keeping track the total links we have seen in the memo dictionary. Once there are 500 unique keys in `seen_urls` we already the information we need to get our answers without actually having to go down 500 separate paths.
+Additionally, if we assume that we merely need to check 500 different links, rather than the 500 specific ones that we originally query for, we can get there a lot faster since we have been keeping track the total links we have seen in the memo dictionary. Once there are 500 unique keys in `seen_urls` we already have the information we need to get our answers without actually having to go down 500 separate paths.
 
 ### Thoughts
 
