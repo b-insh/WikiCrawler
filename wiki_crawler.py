@@ -32,7 +32,7 @@ class WikiCrawler(object):
         for dist_pair in distribution:
             if dist_pair[0]:
                 print (dist_pair[1], "links were ", dist_pair[0], "clicks away from Philosophy")
-                
+
     def crawl(self, url):
         """
         Checks if the url is one we have seen before, if not, finds its first link and continues tracking how many links away it is
@@ -161,4 +161,3 @@ class WikiCrawler(object):
 
 crawler = WikiCrawler()
 crawler.start()
-# crawler.crawl('/wiki/List_of_motor_vehicle_deaths_in_U.S._by_year')
