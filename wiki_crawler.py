@@ -24,13 +24,15 @@ class WikiCrawler(object):
 
         percentage = self._get_percentage()
         distribution = self._get_distribution()
+        average = self._get_average()
 
         print ('Percentage of links that get to Philosophy: %.2f' % percentage)
+        print ('Average number of steps to Philosophy:', average)
         print ('Distribution of number of links to get to Philosophy:')
         for dist_pair in distribution:
             if dist_pair[0]:
                 print (dist_pair[1], "links were ", dist_pair[0], "clicks away from Philosophy")
-
+                
     def crawl(self, url):
         """
         Checks if the url is one we have seen before, if not, finds its first link and continues tracking how many links away it is
@@ -46,9 +48,8 @@ class WikiCrawler(object):
                     self.clear_path(links_away, False)
                 else:
                     links_away += self.seen_urls[url] + 1
-
                     self.clear_path(links_away)
-                    break
+                break
 
             elif url in self.path or not url:
                 self.clear_path(links_away, False)
@@ -123,6 +124,13 @@ class WikiCrawler(object):
                     self.seen_urls[url] = False
 
         self.path = {}
+
+    def _get_average(self):
+        values = self._get_distribution()
+        total_clicks = 0
+        for value in values:
+            total_clicks += (value[0] * value[1])
+        return total_clicks / 500
 
     def _get_distribution(self):
         """ Gets distribution of paths to Philosophy and their lengths """
